@@ -1,26 +1,29 @@
 import generico as func
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
+import hue as hue
+import databricks as databricks
 
-    
 def teste():
-    spark = SparkSession.builder \
-            .appName("PySpark Databricks") \
-            .enableHiveSupport() \
-            .getOrCreate()
-    
-    #df = spark.sql("USE hive_metastore.joaopereira")
-    
-    #df = spark.sql("SELECT current_database()")
-    df = spark.sql("SHOW SCHEMAS").show()
-    df = spark.sql("SHOW TABLES").show()
-    #df = spark.sql("SELECT * FROM joaopereira.premier_league_data_2022")
-    #df.show()
+    print('Olá, pretendes efetuar testes em qual tecnologia? Opções: Hue , DataBricks')
+    while True:
+        texto = input("> ")
+        if texto.lower() == 'sair':
+            break
+        elif texto.lower() == 'hue':
+            print(f"Você escolheu a tecnologia: {texto}")
+            hue.start(texto)
+        elif texto.lower() == 'databricks':
+            print(f"Você escolheu a tecnologia: {texto}")
+            databricks.start(texto)
+        else:
+            print(f"Você escolheu uma tecnologia inválida: {texto}")
 
+        
+        
 
-def main():
+def start():
     teste()
 
-
 if __name__ == '__main__':
-    main()
+    start()
