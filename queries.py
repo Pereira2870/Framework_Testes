@@ -1,0 +1,162 @@
+# Databricks notebook source
+# MAGIC %sql
+# MAGIC SELECT * FROM joaopereira.premier_league_positions_2022;
+# MAGIC
+# MAGIC -- 1)
+# MAGIC
+# MAGIC SELECT
+# MAGIC   CASE
+# MAGIC     WHEN SRC.COUNT_SRC = DEST.COUNT_DEST THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END AS OUTPUT
+# MAGIC FROM (
+# MAGIC   SELECT COUNT(1) AS COUNT_SRC FROM joaopereira.premier_league_data_2022 WHERE 1 = 1
+# MAGIC ) SRC
+# MAGIC LEFT JOIN (
+# MAGIC   SELECT COUNT(1) AS COUNT_DEST FROM iliyan.premier_league_data_2022 WHERE 1 = 1
+# MAGIC ) DEST
+# MAGIC ON
+# MAGIC   1 = 1
+# MAGIC ;
+# MAGIC
+# MAGIC -- 2)
+# MAGIC
+# MAGIC SELECT
+# MAGIC   CASE
+# MAGIC     WHEN SRC.COUNT_SRC = DEST.COUNT_DEST THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END AS OUTPUT
+# MAGIC FROM (
+# MAGIC   SELECT COUNT(1) AS COUNT_SRC FROM joaopereira.premier_league_data_2022 WHERE clube = "Manchester United"
+# MAGIC ) SRC
+# MAGIC LEFT JOIN (
+# MAGIC   SELECT COUNT(1) AS COUNT_DEST FROM iliyan.premier_league_data_2022 WHERE clube = "Sporting" 
+# MAGIC ) DEST
+# MAGIC ON
+# MAGIC   1 = 1
+# MAGIC ;
+# MAGIC
+# MAGIC -- 3)
+# MAGIC
+# MAGIC SELECT 
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_1 = DEST.FIELD_1 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_1
+# MAGIC FROM ( 
+# MAGIC   SELECT vitorias AS FIELD_1 
+# MAGIC   FROM joaopereira.premier_league_data_2022
+# MAGIC   WHERE
+# MAGIC     clube = "Tottenham"
+# MAGIC ) SRC
+# MAGIC LEFT JOIN (
+# MAGIC   SELECT SUM(vitorias) AS FIELD_1
+# MAGIC   FROM iliyan.premier_league_data_2022
+# MAGIC   WHERE
+# MAGIC     clube IN ("Aston Villa", "Southampton")
+# MAGIC ) DEST
+# MAGIC ON
+# MAGIC   1 = 1
+# MAGIC ;
+# MAGIC
+# MAGIC -- 4)
+# MAGIC
+# MAGIC SELECT
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_1 = DEST.FIELD_1 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_1,
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_2 = DEST.FIELD_2 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_2
+# MAGIC FROM ( 
+# MAGIC   SELECT classificacao AS FIELD_1, vitorias AS FIELD_2 
+# MAGIC   FROM joaopereira.premier_league_data_2022
+# MAGIC   WHERE
+# MAGIC     1 = 1
+# MAGIC ) SRC
+# MAGIC LEFT JOIN (
+# MAGIC   SELECT classificacao AS FIELD_1, vitorias AS FIELD_2
+# MAGIC   FROM iliyan.premier_league_stats_2022
+# MAGIC   WHERE
+# MAGIC     1 = 1
+# MAGIC ) DEST
+# MAGIC ON
+# MAGIC   src.FIELD_1 = dest.FIELD_1
+# MAGIC ;
+# MAGIC
+# MAGIC -- 5)
+# MAGIC
+# MAGIC SELECT 
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_1 = DEST.FIELD_1 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_1,
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_2 = DEST.FIELD_2 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_2,
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_3 = DEST.FIELD_3 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_3,
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_4 = DEST.FIELD_4 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_4,
+# MAGIC   MIN(CASE
+# MAGIC     WHEN SRC.FIELD_5 = DEST.FIELD_5 THEN "OK"
+# MAGIC     ELSE "NOT OK"
+# MAGIC   END) AS FIELD_5
+# MAGIC FROM ( 
+# MAGIC   SELECT Clube AS FIELD_1, Classificacao AS FIELD_2, Vitorias AS FIELD_3, Empates AS FIELD_4, Derrotas AS FIELD_5 
+# MAGIC   FROM joaopereira.premier_league_data_2022
+# MAGIC   WHERE
+# MAGIC     1 = 1  
+# MAGIC ) SRC
+# MAGIC LEFT JOIN (
+# MAGIC   SELECT clube AS FIELD_1, classificacao AS FIELD_2, vitorias AS FIELD_3, empates AS FIELD_4, derrotas AS FIELD_5
+# MAGIC   FROM iliyan.premier_league_data_2022
+# MAGIC   WHERE
+# MAGIC     1 = 1
+# MAGIC ) DEST
+# MAGIC ON
+# MAGIC   src.FIELD_2 = dest.FIELD_2
+# MAGIC ;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC drop table if exists framework_testes.TESTS;
+# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.TESTS (
+# MAGIC     TEST_ID INT,
+# MAGIC     TYPE STRING,
+# MAGIC     NAME STRING,
+# MAGIC     DESCRIPTION STRING
+# MAGIC );
+# MAGIC
+# MAGIC drop table if exists framework_testes.TEST_PARAMETERS;
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.TEST_PARAMETERS (
+# MAGIC     PARAM_ID INT,
+# MAGIC     TEST_ID INT,
+# MAGIC     SOURCE_TABLE STRING,
+# MAGIC     DEST_TABLE STRING,
+# MAGIC     JOIN_KEY STRING,
+# MAGIC     VALIDATE_FIELD STRING,
+# MAGIC     SOURCE_FILTER_FIELD STRING,
+# MAGIC     DEST_FILTER_FIELD STRING,
+# MAGIC     SOURCE_FILTER_VALUE STRING,
+# MAGIC     DEST_FILTER_VALUE STRING
+# MAGIC );
+# MAGIC
+# MAGIC drop table if exists framework_testes.LOGS;
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.LOGS (
+# MAGIC     LOG_ID BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+# MAGIC     PARAM_ID INT,
+# MAGIC     QUERY STRING,
+# MAGIC     RESULT STRING,
+# MAGIC     TIMESTAMP TIMESTAMP
+# MAGIC );
