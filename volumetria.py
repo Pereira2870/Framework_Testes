@@ -1,13 +1,14 @@
 # Databricks notebook source
 def test_data_volume(
-    param_id,
     test_id,
-    test_type,
+    subtype_id,
     src_table,
     dest_table,
     src_where_condition,
-    dest_where_condition
+    dest_where_condition,
+    src_partition_filter_field
 ):
+
     try:
         query = f"""
             SELECT
@@ -22,11 +23,16 @@ def test_data_volume(
         """
 
         result = spark.sql(query).collect()[0]['OUTPUT']
-        
+
         return {
-            "PARAM_ID": param_id,
+            "TEST_ID": test_id,
+            "SUBTYPE_ID": subtype_id,
             "QUERY": query,
             "RESULT": result,
+            "SRC_TABLE": src_table,
+            "DEST_TABLE": dest_table,
+            "SRC_PARTITION_FILTER_FIELD": src_partition_filter_field
         }
+
     except Exception as e:
         print(f"[!] Caught exception in test_data_volume: {e}")

@@ -19,41 +19,51 @@
 
 # COMMAND ----------
 
-def parse_config_table():
+def parse_config_table(test_config_set_list):
+   
+    if not test_config_set_list: #Se a lista de set's estiver vazia, não é aplicado nenhum filtro.
+        test_config_set_filter = '1=1'
+    else: #Se a lista de set's estiver prrenchida, são executados os test ids parametrizados.
+        test_config_set_values = [f"'{test_config_set_value.TEST_ID}'" for test_config_set_value in test_config_set_list]
+        test_config_set_filter = f"test_config_params.TEST_ID IN ({', '.join(test_config_set_values)})"
+        
     return spark.sql(
         f"""
             SELECT
-                configs.PARAM_ID AS PARAM_ID,
-                configs.TEST_ID AS TEST_ID,
-                tests.TYPE AS TEST_TYPE,
-                configs.SOURCE_TABLE AS SOURCE_TABLE,
-                configs.DEST_TABLE AS DEST_TABLE,
-                configs.JOIN_KEY AS JOIN_KEY,
-                configs.SOURCE_SELECT_FIELD AS SOURCE_SELECT_FIELD,
-                configs.DEST_SELECT_FIELD AS DEST_SELECT_FIELD,
-                configs.SOURCE_FILTER AS SOURCE_FILTER,
-                configs.DEST_FILTER AS DEST_FILTER,
-                configs.SOURCE_GROUPBY AS SOURCE_GROUPBY,
-                configs.DEST_GROUPBY AS DEST_GROUPBY
-            FROM framework_testes.test_parameters configs
-            LEFT JOIN framework_testes.tests tests
-            ON
-                configs.TEST_ID = tests.TEST_ID
+                test_config_params.TEST_ID AS TEST_ID,
+                test_config_params.TYPE_ID AS TYPE_ID,
+                test_config_params.SUBTYPE_ID AS SUBTYPE_ID,
+                test_config_params.SOURCE_TABLE AS SOURCE_TABLE,
+                test_config_params.DEST_TABLE AS DEST_TABLE,
+                test_config_params.JOIN_KEY AS JOIN_KEY,
+                test_config_params.SOURCE_SELECT_FIELD AS SOURCE_SELECT_FIELD,
+                test_config_params.DEST_SELECT_FIELD AS DEST_SELECT_FIELD,
+                test_config_params.SOURCE_FILTER AS SOURCE_FILTER,
+                test_config_params.DEST_FILTER AS DEST_FILTER,
+                test_config_params.SOURCE_GROUPBY AS SOURCE_GROUPBY,
+                test_config_params.DEST_GROUPBY AS DEST_GROUPBY,
+                test_config_params.SOURCE_FLAG_PARTITION_FILTER AS SOURCE_FLAG_PARTITION_FILTER,
+                test_config_params.DEST_FLAG_PARTITION_FILTER AS DEST_FLAG_PARTITION_FILTER,
+                test_config_params.SOURCE_PARTITION_FILTER_FIELD AS SOURCE_PARTITION_FILTER_FIELD,
+                test_config_params.DEST_PARTITION_FILTER_FIELD AS DEST_PARTITION_FILTER_FIELD,
+                test_config_params.key_fields AS KEY_FIELDS
+            FROM framework_testes.test_config_parameters test_config_params
+            WHERE {test_config_set_filter}
             ORDER BY
-                PARAM_ID
+                TEST_ID
         """
     ).collect()
 
-def parse_conditions(test_params_list):
+def parse_conditions(test_config_params_list):
     params_list = []
 
-    for test_params in test_params_list:
-        param_id = test_params['PARAM_ID']
-        test_id = test_params['TEST_ID']
-        test_type = test_params['TEST_TYPE']
+    for test_config_params in test_config_params_list:
+        test_id = test_config_params['TEST_ID']
+        subtype_id  = test_config_params['SUBTYPE_ID']
 
-        src_select_field = test_params['SOURCE_SELECT_FIELD']
-        dest_select_field = test_params['DEST_SELECT_FIELD']
+
+        src_select_field = test_config_params['SOURCE_SELECT_FIELD']
+        dest_select_field = test_config_params['DEST_SELECT_FIELD']
 
         if not src_select_field:
             src_select_field = '*'
@@ -61,19 +71,19 @@ def parse_conditions(test_params_list):
         if not dest_select_field:
             dest_select_field = '*'
 
-        source_table = test_params['SOURCE_TABLE']
-        dest_table = test_params['DEST_TABLE']
+        source_table = test_config_params['SOURCE_TABLE']
+        dest_table = test_config_params['DEST_TABLE']
 
-        join_key = test_params['JOIN_KEY']
+        join_key = test_config_params['JOIN_KEY']
         
         if not join_key:
             join_key = '1 = 1'
             
-        src_groupby = test_params['SOURCE_GROUPBY']
-        dest_groupby = test_params['DEST_GROUPBY']
+        src_filter = test_config_params['SOURCE_FILTER']
+        dest_filter = test_config_params['DEST_FILTER']
 
-        src_filter = test_params['SOURCE_FILTER']
-        dest_filter = test_params['DEST_FILTER']
+        src_groupby = test_config_params['SOURCE_GROUPBY']
+        dest_groupby = test_config_params['DEST_GROUPBY']
 
         if not src_filter:
             src_filter = '1 = 1'
@@ -81,10 +91,22 @@ def parse_conditions(test_params_list):
         if not dest_filter:
             dest_filter = '1 = 1'
 
+        src_flag_partition_filter = test_config_params['SOURCE_FLAG_PARTITION_FILTER']
+        dest_flag_partition_filter = test_config_params['DEST_FLAG_PARTITION_FILTER']
+
+        src_partition_filter_field = test_config_params['SOURCE_PARTITION_FILTER_FIELD']
+
+        if not src_partition_filter_field:
+            src_partition_filter_field = ''
+
+
+        dest_partition_filter_field = test_config_params['DEST_PARTITION_FILTER_FIELD']
+
+        key_fields = test_config_params['KEY_FIELDS']
+
         params_list.append({
-            'PARAM_ID': param_id,
             'TEST_ID': test_id,
-            'TEST_TYPE': test_type,
+            'SUBTYPE_ID': subtype_id,
             'SOURCE_TABLE': source_table,
             'DEST_TABLE': dest_table,
             'JOIN_KEY': join_key,
@@ -94,23 +116,38 @@ def parse_conditions(test_params_list):
             'DEST_FILTER': dest_filter,
             'SRC_GROUPBY': src_groupby,
             'DEST_GROUPBY': dest_groupby,
+            'SOURCE_FLAG_PARTITION_FILTER': src_flag_partition_filter,
+            'DEST_FLAG_PARTITION_FILTER': dest_flag_partition_filter,
+            'SOURCE_PARTITION_FILTER_FIELD': src_partition_filter_field,
+            'DEST_PARTITION_FILTER_FIELD': dest_partition_filter_field,
+            'KEY_FIELDS': key_fields
         })
                     
     return params_list
 
-def run_framework():
+def parse_config_set ():
+    return spark.sql(
+        f"""
+            SELECT
+                test_rel_set_parameter.TEST_ID AS TEST_ID
+            FROM framework_testes.test_rel_set_parameter test_rel_set_parameter
+            ORDER BY
+                TEST_ID
+        """
+    ).collect()
+
+def run_framework(set_list=[]):
     try:
-        
-        test_params_list = parse_config_table()
-        tests = parse_conditions(test_params_list)
+        test_config_set_list = parse_config_set()
+        test_config_params_list = parse_config_table(test_config_set_list)
+        tests = parse_conditions(test_config_params_list)
     
         if not tests:
             raise Exception("Test configuration table is empty!")
 
         for test in tests:
-            param_id = test['PARAM_ID']
             test_id = test['TEST_ID']
-            test_type = test['TEST_TYPE']
+            subtype_id = test['SUBTYPE_ID']
             src_table = test['SOURCE_TABLE']
             dest_table = test['DEST_TABLE']
             join_key = test['JOIN_KEY']
@@ -120,25 +157,31 @@ def run_framework():
             dest_filter = test['DEST_FILTER']
             src_groupby = test['SRC_GROUPBY']
             dest_groupby = test['DEST_GROUPBY']
+            src_flag_partition_filter = test['SOURCE_FLAG_PARTITION_FILTER']
+            dst_flag_partition_filter = test['DEST_FLAG_PARTITION_FILTER']
+            src_partition_filter_field = test['SOURCE_PARTITION_FILTER_FIELD']
+            dest_partition_filter_field = test['DEST_PARTITION_FILTER_FIELD']
+            key_fields = test['KEY_FIELDS']
 
-            if test_id == 1:
+            if subtype_id == 'VOL':
                 print("[!] Calling data volume workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_volume(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
                     dest_table,
                     src_filter,
-                    dest_filter
+                    dest_filter,
+                    src_partition_filter_field
                 )
                 print(f"[!] Finished data volume workload... - {result['RESULT']}")
-            elif test_id == 2:
+            elif subtype_id == 'CON':
                 print("[!] Calling data mapping workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_mapping(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
                     dest_table,
                     src_filter,
@@ -147,35 +190,41 @@ def run_framework():
                     src_groupby,
                     dest_groupby,
                     src_select_field,
-                    dest_select_field
+                    dest_select_field,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished data mapping workload... - {result['RESULT']}")
-            elif test_id == 3:
+            elif subtype_id == 'CAT':
                 print("[!] Calling data catalog workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_catalog(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
-                    src_filter
+                    src_filter,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished data catalog workload... - {result['RESULT']}")
-            elif test_id == 4:
+            elif subtype_id == 'FORM':
                 print("[!] Calling data format workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_catalog(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
-                    src_filter
+                    src_filter,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished data format workload... - {result['RESULT']}")
-            elif test_id == 5:
+            elif subtype_id == 'REF':
                 print("[!] Calling referential integrity workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_mapping(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
                     dest_table,
                     src_filter,
@@ -184,35 +233,42 @@ def run_framework():
                     src_groupby,
                     dest_groupby,
                     src_select_field,
-                    dest_select_field
+                    dest_select_field,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished referential integrity workload... - {result['RESULT']}")
-            elif test_id == 6:
+            elif subtype_id == 'OBG':
                 print("[!] Calling mandatory fill workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_data_catalog(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
-                    src_filter
+                    src_filter,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished mandatory fill workload... - {result['RESULT']}")
-            elif test_id == 7:
+            elif subtype_id == 'DUP':
                 print("[!] Calling duplicates workload...")
+                print(f"[!] TEST ID - {test_id}")
                 result = test_duplicates(
-                    param_id,
                     test_id,
-                    test_type,
+                    subtype_id,
                     src_table,
                     src_filter,
                     src_groupby,
-                    src_select_field
+                    src_select_field,
+                    src_partition_filter_field,
+                    key_fields
                 )
                 print(f"[!] Finished duplicates workload... - {result['RESULT']}")
             else:
                 raise Exception("Caught unknown test type!")
-
-            insert_log(result)
+            
+            insert_results(result)
+        print(f"[!] Framwork run with success.")
     except Exception as e:
         print(f"[!] Caught exception in run_framework: {e}")
 

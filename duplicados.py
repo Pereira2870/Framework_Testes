@@ -1,40 +1,60 @@
 # Databricks notebook source
 def test_duplicates(
-    param_id,
     test_id,
-    test_type,
+    subtype_id,
     src_table,
-    src_where_condition,
+    src_filter,
     src_groupby,
-    src_select_field
+    src_select_field,
+    src_partition_filter_field,
+    key_fields
+
 ):
     try:
         query = f"""
+            WITH duplicates AS (
+                SELECT
+                    {src_select_field},
+                    {key_fields},
+                    COUNT(*) AS count_duplicates
+                FROM {src_table}
+                WHERE {src_filter}
+                GROUP BY {src_groupby},{key_fields}
+                HAVING COUNT(*) > 1
+            )
             SELECT
                 CASE
-                    WHEN SRC.COUNT_SRC = 0 THEN 'OK'
-                    ELSE 'NOT OK'
-                END AS OUTPUT
-            FROM (
-                SELECT
-                    COUNT(1) AS COUNT_SRC
-                FROM (
-                    SELECT {src_select_field}, COUNT(1) AS COUNT_DUPLICATES
-                    FROM {src_table}
-                    WHERE {src_where_condition}
-                    GROUP BY {src_groupby}
-                    HAVING
-                        COUNT_DUPLICATES > 1
-                ) AS DUPLICATES
-            ) SRC
+                    WHEN EXISTS (SELECT 1 FROM duplicates) THEN 'NOT OK'
+                    ELSE 'OK'
+                END AS result,
+                {src_select_field} as src_select_field,
+                {key_fields} as key_fields,
+                count_duplicates
+            FROM duplicates
         """
+        result_rows = spark.sql(query).collect()
 
-        result = spark.sql(query).collect()[0]['OUTPUT']
+        if result_rows:
+            key_fields = [
+                {   
+                    "source_field" : row[1],
+                    "key_fields": row[2]
+                }
+                for row in result_rows
+            ]
+            result = "NOT OK"
+        else:
+            key_fields = []
+            result = "OK"
         
         return {
-            "PARAM_ID": param_id,
+            "TEST_ID": test_id,
+            "SUBTYPE_ID": subtype_id,
             "QUERY": query,
             "RESULT": result,
+            "KEY_FIELDS": key_fields,
+            "SRC_TABLE": src_table,
+            "SRC_PARTITION_FILTER_FIELD": src_partition_filter_field
         }
     except Exception as e:
         print(f"[!] Caught exception in test_duplicates: {e}")
