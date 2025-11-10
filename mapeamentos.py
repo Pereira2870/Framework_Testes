@@ -1,189 +1,148 @@
 # Databricks notebook source
-def query_table_fields(table):
-    select_fields = ""
-
-    columns = spark.sql(f"SHOW COLUMNS FROM {table}").collect()
-
-    for col in columns:
-        select_fields += f"{col[0]}, "
-
-    return select_fields[:-2]
-
-def format_select_fields(table, select_field):
-    
-    if select_field == "*":
-        select_field = query_table_fields(table)
-    
-    fields = select_field.split(",")
-
-    select_fields = ""
-    outer_select = ""
-    counter = 1
-
-    field_dict = {}
-    field_dict_opposite = {}
-
-    for field in fields:
-        if counter == 1:
-            select_fields += f"{field.strip()} AS FIELD_{counter}"
-            outer_select += f"""
-                MIN(CASE
-                    WHEN SRC.FIELD_{counter} = DEST.FIELD_{counter} THEN 'OK'
-                    ELSE 'NOT OK'
-                END) AS FIELD_{counter}
-            """
-        else:
-            select_fields += f", {field.strip()} AS FIELD_{counter}"
-            outer_select += f""",
-                MIN(CASE
-                    WHEN SRC.FIELD_{counter} = DEST.FIELD_{counter} THEN 'OK'
-                    ELSE 'NOT OK'
-                END) AS FIELD_{counter}
-            """
-            
-        field_dict[field.strip()] = f"FIELD_{counter}" 
-        field_dict_opposite[f"FIELD_{counter}"] = field.strip() 
-        
-        counter += 1
-
-    return select_fields, outer_select, field_dict, field_dict_opposite
-
-def format_join_key(join_key, field_dict):
-
-    for field in field_dict:
-        join_key = join_key.replace(field, field_dict[field])
-
-    return join_key.upper()
-
-def parse_output(output, src_field_dict_opposite, dst_field_dict_opposite):
-
-    result = 'OK'
-    dest_value = ''
-    print(f'teste jpjp {enumerate(output)}')
-    for index, col in enumerate(output):
-        print(f'index {index}')
-        print(f'col {col}')
-        #if output['teste'] is None:
-        #    if index == 0:
-        #        dest_value += f'{src_field_dict_opposite[f"FIELD_{index+1}"]} = {dst_field_dict_opposite[f"FIELD_{index+1}"]}'
-        #    else:
-        #        dest_value += f'; {src_field_dict_opposite[f"FIELD_{index+1}"]} = {dst_field_dict_opposite[f"FIELD_{index+1}"]}'
-
-        #    if col == 'NOT OK':
-        #        result = 'NOT OK'
-        #        dest_value += ' NOT OK'
-        #    else:
-        #        dest_value += ' OK'
-
-    return result, dest_value
+from pyspark.sql.functions import col, when, lit
+from functools import reduce
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 
 def test_data_mapping(
     test_id,
     subtype_id,
     src_table,
     dest_table,
-    src_filter,
-    dest_filter,
     join_key,
-    src_groupby,
-    dest_groupby,
     src_select_field,
     dest_select_field,
+    src_filter,
+    dest_filter,
+    src_groupby,
+    dest_groupby,
     src_partition_filter_field,
     key_fields
 ):
     try:
-        # print(f'test_id: {test_id}')
-        full_field_dict = {}
+        query = ""
+            
+        if src_filter == "":
+            src_filter = "1=1"
+        else:
+            src_filter = src_filter
+
+        if dest_filter == "":
+            dest_filter = "1=1"
+        else:
+            dest_filter = dest_filter
+
+        if join_key !="":
+            join_key = join_key
+
+        if src_select_field == "":
+            query_source = "SELECT * FROM {0} WHERE {1}".format(src_table,  src_filter)
+            cols_source = extrair_colunas_cursor_sql(query_source)
+        else:
+            query_source = "SELECT {0} FROM {1} WHERE {2}".format(src_select_field,src_table,  src_filter)
+            cols_source = extrair_colunas_cursor_sql(query_source)
+
+        if dest_select_field == "":
+            query_dest = "SELECT * FROM {0} WHERE {1}".format(dest_table, dest_filter)
+            cols_dest = extrair_colunas_cursor_sql(query_dest)
+        else:
+            query_dest = "SELECT {0} FROM {1} WHERE {2}".format(dest_select_field,dest_table,  dest_filter)
+            cols_dest = extrair_colunas_cursor_sql(query_source)
+
+        colunas_a = cols_source
+        colunas_b = cols_dest
+
+        if src_select_field == "":
+            # Define as queries
+            query1_str = "SELECT {0} FROM {1} WHERE {2}".format(', '.join  (colunas_a),     src_table, src_filter)
+        else:
+            query1_str = "SELECT {0} FROM {1} WHERE {2}".format(src_select_field,     src_table, src_filter)
         
-        src_fields, outer_select, field_dict, src_field_dict_opposite = format_select_fields(src_table, src_select_field)
-        full_field_dict.update(field_dict)
-        src_field = ", ".join([field.strip() for field in src_select_field.split(',') if field.strip() not in join_key])
-        # print(f'src_field: {src_field}')
+        if dest_select_field == "":
+            query2_str = "SELECT {0} FROM {1} WHERE {2}".format(', '.join  (colunas_b),  dest_table, dest_filter)
+        else:
+            query2_str = "SELECT {0}  FROM {1} WHERE {2}".format(dest_select_field,     dest_table, dest_filter)
 
-        dest_fields, outer_select, field_dict, dst_field_dict_opposite = format_select_fields(dest_table, dest_select_field)
-        full_field_dict.update(field_dict)
-        dest_field = ", ".join([field.strip() for field in dest_select_field.split(',') if field.strip() not in join_key])
-        # print(f'dest_field: {dest_field}')
+        # Cria os DataFrames
+        df_source = spark.sql(query1_str)
+        df_source.show()
 
-        # print(f'full_field_dict: {full_field_dict}')
-        print(f'src_field_dict_opposite: {src_field_dict_opposite}')
-        print(f'dst_field_dict_opposite: {dst_field_dict_opposite}')
-        # print(f'src_field: {", ".join(src_field)}')
-        # print(f'dest_field: {", ".join(dest_field)}')
-        # print(f'src_select_field: {src_select_field}')
-        # print(f'dest_select_field: {dest_select_field}')
+        df_dest = spark.sql(query2_str)
+        df_dest = df_dest.withColumnRenamed("sum(vitorias)", "vitorias")
+        df_dest.show()
 
-        formatted_join_key = format_join_key(join_key, full_field_dict)
+        if join_key != "1 = 1":
+            left_col, right_col = [s.strip() for s in join_key.split("=")]
 
-        src_groupby_exp = f"GROUP BY {src_groupby}" if src_groupby else ""
-        dest_groupby_exp = f"GROUP BY {dest_groupby}" if dest_groupby else ""
+            df_join = df_source.alias("src").join(
+            df_dest.alias("dest"),
+            on=F.col(left_col) == F.col(right_col),
+            how="outer"
+            )
+        else:
+            df_join = df_source.alias("src").join(
+                df_dest.alias("dest"),
+                on=lit(True),
+                how="outer"
+            )
 
-        query = f"""
-            SELECT {outer_select}
-            FROM ( 
-                SELECT {src_fields}
-                FROM {src_table}
-                WHERE
-                    {src_filter}
-                {src_groupby_exp}
-            ) SRC
-            LEFT JOIN (
-                SELECT {dest_fields}
-                FROM {dest_table}
-                WHERE
-                    {dest_filter}
-                {dest_groupby_exp}
-            ) DEST
-            ON
-                {formatted_join_key}
-        """
-        output = spark.sql(query).collect()[0]
-        print(f"passou {output}")
-        result, dest_value = parse_output(output, src_field_dict_opposite, dst_field_dict_opposite)
+
+
+
+        # Seleciona colunas com sufixos para comparação
+        select_cols = []
+        for ca, cb in zip(colunas_a, colunas_b):
+            select_cols.append(col(f"src.{ca}").alias(f"{ca}_src"))
+            select_cols.append(col(f"dest.{cb}").alias(f"{cb}_dest"))
+
+        df_comparado_val = df_join.select(*select_cols)
+
+        # Gera expressão para identificar diferenças
+        condicoes_diferenca = [
+            col(f"{ca}_src") != col(f"{cb}_dest") for ca, cb in zip(colunas_a, colunas_b)
+        ]
     
-        #query = f"""
-        #    SELECT {outer_select},SRC.{key_fields}
-        #    FROM ( 
-        #        SELECT {src_fields},{key_fields} 
-        #        FROM {src_table}
-        #        WHERE
-        #            {src_filter}
-        #        {src_groupby_exp}
-        #    ) SRC
-        #    LEFT JOIN (
-        #        SELECT {dest_fields}
-        #        FROM {dest_table}
-        #        WHERE
-        #            {dest_filter}
-        #        {dest_groupby_exp}
-        #    ) DEST
-        #    ON
-        #        {formatted_join_key}
-        #    GROUP BY SRC.{key_fields}
-        #"""
-        
-        #result_rows = spark.sql(query).collect()
+        # Adiciona coluna de status
+        df_status_val = df_comparado_val.withColumn(
+            "status",
+            when(reduce(lambda x, y: x | y, condicoes_diferenca), lit("NO MATCH"))
+            .when(reduce(lambda x, y: x & y, [col(f"{cb}_dest").isNull() for cb in     colunas_b]),    lit("NO MATCH @ ONLY TABELA A"))
+            .when(reduce(lambda x, y: x & y, [col(f"{ca}_src").isNull() for ca in     colunas_a]),    lit("NO MATCH @ ONLY TABELA B"))
+            .otherwise(lit("MATCH"))
+        )
+    
+        # Filtra apenas diferenças
+        df_diferencas_calc = df_status_val.filter(col("status") != "MATCH")
+        df_diferencas_calc.show()
 
-        #if result_rows:
-        #    key_fields = [
-        #        {   
-        #            "key_fields": row[1]
-        #        }
-        #        for row in result_rows
-        #    ]
+        result_list = [row[f"{key_fields}_src"] for row in df_diferencas_calc.select(f"{key_fields}_src").collect()]
 
+        if result_list != []:
+            result = "NOK"
+        else:
+            result = "OK"
+    
         return {
             "TEST_ID": test_id,
             "SUBTYPE_ID": subtype_id,
             "QUERY": query,
             "RESULT": result,
-            "RESULT_DETAILS": dest_value,
             "SRC_PARTITION_FILTER_FIELD": src_partition_filter_field,
-            "SRC_FIELD": src_field,
-            "DEST_FIELD": dest_field,
-            "KEY_FIELDS": key_fields
+            "SRC_FIELD": src_select_field,
+            "DEST_FIELD": dest_select_field,
+            "KEY_FIELDS": key_fields,
+            "RESULT_DETAILS": result_list
 
         }
     except Exception as e:
         print(f"[!] Caught exception in test_data_mapping: {e}")
+
+def extrair_colunas_cursor_sql(query, chave_cruzamento=None, limite=None):
+    chave_cruzamento = chave_cruzamento or []
+    df_query = spark.sql(query)
+    colunas = [field.name for field in df_query.schema.fields]
+    colunas_validas = [col for col in colunas if col and col != '# col_name']
+    colunas_filtradas = [col for col in colunas_validas if col not in chave_cruzamento]
+    if limite in colunas_filtradas:
+        colunas_filtradas = colunas_filtradas[:colunas_filtradas.index(limite)]
+    return colunas_filtradas

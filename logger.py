@@ -37,11 +37,10 @@ def insert_results(result):
 
         #INSERT test_out_results_details
         if result['RESULT'] !='OK' and subtype_id !='VOL':
-            key_fields = result["KEY_FIELDS"]
-            print(f"key_fields marados {key_fields}")
-            for teste in key_fields:
-                key_field = teste["key_fields"]
-                print(f"key_field {key_field}")
+            result_details = result["RESULT_DETAILS"]
+
+            for teste in result_details:
+
                 spark.sql(
                     f"""
                         INSERT INTO framework_testes.test_out_results_details
@@ -49,7 +48,7 @@ def insert_results(result):
                         VALUES (
                             {details_id},
                             {result_id},
-                            "{key_field}",
+                            "{teste}",
                             current_timestamp()
                         )
                     """
