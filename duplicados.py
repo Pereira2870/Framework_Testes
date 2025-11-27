@@ -29,7 +29,7 @@ def test_duplicates(
         df_duplicates = df_grouped.filter("count > 1")
 
         # Reparticiona para otimizar processamento em grandes volumes
-        df_duplicates = df_duplicates.repartition(32)  # Ajuste o número conforme seu cluster
+        df_duplicates = df_duplicates.repartition(128)  # Ajuste o número conforme seu cluster
 
         result_rows = df_duplicates.collect()
 

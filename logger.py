@@ -39,19 +39,22 @@ def insert_results(result):
         if result['RESULT'] !='OK' and subtype_id !='VOL':
             key_fields = result["KEY_FIELDS_LIST"]
             if key_fields != []:
-                # Cria uma lista de Rows para o DataFrame, serializando KEY_FIELDS se necessário
+                # Remover duplicados ANTES de atribuir IDs para garantir sequência linear
+                # Preserva ordem de entrada usando dict.fromkeys
+                unique_keys = list(dict.fromkeys(key_fields))
                 now = datetime.datetime.now()
+                start_id = int(details_id)
                 details_rows = [Row(
-                    DETAILS_ID=int(details_id)+i,
+                    DETAILS_ID=start_id + i,
                     RESULT_ID=result_id,
                     KEY_FIELDS=key,
                     TIMESTAMP=now
-                ) for i, key in enumerate(key_fields)]
-                df_details = spark.createDataFrame(details_rows)
-                df_details = df_details.dropDuplicates(["KEY_FIELDS"])
-                df_details = df_details.repartition(32)
-                df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
-                details_id = int(details_id) + len(key_fields)
+                ) for i, key in enumerate(unique_keys)]
+                if details_rows:
+                    df_details = spark.createDataFrame(details_rows)
+                    # Já não é necessário dropDuplicates, IDs atribuídos após dedup
+                    df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
+                    details_id = start_id + len(unique_keys)
             else:
                 details_row = [Row(
                     DETAILS_ID=int(details_id),
@@ -60,7 +63,6 @@ def insert_results(result):
                     TIMESTAMP=now
                 )]
                 df_details = spark.createDataFrame(details_row)
-                df_details = df_details.dropDuplicates(["KEY_FIELDS"])
                 df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
                 details_id = int(details_id)  + 1
 

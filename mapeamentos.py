@@ -81,21 +81,40 @@ def test_data_mapping(
         df_dest = spark.sql(query2_str)
 
         if join_key != "1 = 1":
-            left_col, right_col = [s.strip() for s in join_key.split("=")]
- 
-            df_join = df_source.alias("src").join(
-            df_dest.alias("dest"),
-            on=F.col(left_col) == F.col(right_col),
-            how="outer"
-            )
+            # Suporta múltiplas condições de junção: "colA = colA and colB = colB ..."
+            try:
+                join_segments = [seg.strip() for seg in join_key.split("and") if seg.strip()]
+                if not join_segments:
+                    raise ValueError("join_key vazio após processamento.")
+                conditions = []
+                for seg in join_segments:
+                    if "=" not in seg:
+                        raise ValueError(f"Segmento inválido na cláusula de junção: '{seg}'")
+                    left_col, right_col = [s.strip() for s in seg.split("=", 1)]
+                    # Usa aliases src/dest para evitar ambiguidade
+                    conditions.append(col(f"src.{left_col}") == col(f"dest.{right_col}"))
+                # Combina condições com AND lógico
+                join_condition = reduce(lambda a, b: a & b, conditions)
+                df_join = df_source.alias("src").join(
+                    df_dest.alias("dest"),
+                    on=join_condition,
+                    how="outer"
+                )
+            except Exception as je:
+                raise Exception(f"Erro ao processar join_key '{join_key}': {je}")
         else:
             df_join = df_source.crossJoin(df_dest)
-        
+
         # Seleciona colunas com sufixos para comparação
         select_cols = []
-        for ca, cb in zip(colunas_a, colunas_b):
-            select_cols.append(col(f"src.{ca}").alias(f"{ca}_src"))
-            select_cols.append(col(f"dest.{cb}").alias(f"{cb}_dest"))
+        if join_key == "1 = 1":
+            for ca, cb in zip(colunas_a, colunas_b):
+                select_cols.append(col(f"{ca}").alias(f"{ca}_src"))
+                select_cols.append(col(f"{cb}").alias(f"{cb}_dest"))
+        else:
+            for ca, cb in zip(colunas_a, colunas_b):
+                select_cols.append(col(f"src.{ca}").alias(f"{ca}_src"))
+                select_cols.append(col(f"dest.{cb}").alias(f"{cb}_dest"))
         
         df_comparado_val = df_join.select(*select_cols)
 
@@ -103,7 +122,7 @@ def test_data_mapping(
         condicoes_diferenca = [
             col(f"{ca}_src") != col(f"{cb}_dest") for ca, cb in zip(colunas_a, colunas_b)
         ]
-    
+        
         # Adiciona coluna de status
         df_status_val = df_comparado_val.withColumn(
             "status",
@@ -116,11 +135,52 @@ def test_data_mapping(
         # Filtra apenas diferenças
         df_diferencas_calc = df_status_val.filter(col("status") != "MATCH")
         df_diferencas_calc.show()
-        print("AQUI")
-        if key_fields != "":
-            key_fields_list = [f"{key_fields}='{row[f'{key_fields}_src']}'" for row in df_diferencas_calc.select(f"{key_fields}_src").collect()]
 
-            print(key_fields_list)
+        if key_fields != "":
+            # Suporta múltiplas chaves separadas por vírgula: "c1,c2,c3"
+            keys = [k.strip() for k in key_fields.split(",") if k.strip()]
+            if keys:
+                # Define a função auxiliar para montar o predicado
+                def build_predicate(row):
+                    parts = []
+                    for k in keys:
+                        val = row[f"{k}_src"]
+                        if val is None:
+                            parts.append(f"{k} IS NULL")
+                        else:
+                            sval = str(val).replace("'", "''")
+                            parts.append(f"{k}='{sval}'")
+                    return " , ".join(parts)
+
+                if subtype_id == 'REF':
+                    # Para REF: somente chaves que não existem no destino
+                    # key_fields pode ter nomes diferentes dos usados no join_key.
+                    # Construímos um mapa src->dest a partir do join_key para localizar o nome correto da coluna no destino.
+                    try:
+                        join_segments = [seg.strip() for seg in str(join_key).split("and") if seg.strip()]
+                        pairs = []
+                        for seg in join_segments:
+                            if "=" in seg:
+                                left_col, right_col = [s.strip() for s in seg.split("=", 1)]
+                                pairs.append((left_col, right_col))
+                        # Mapa de coluna origem para coluna destino
+                        src_to_dest = {src: dest for src, dest in pairs}
+                    except Exception:
+                        src_to_dest = {}
+
+                    # Para cada chave fornecida, procura a coluna correspondente no destino; se não houver, usa o próprio nome
+                    dest_key_cols = [src_to_dest.get(k, k) for k in keys]
+                    only_src_mask = reduce(lambda x, y: x & y, [col(f"{dk}_dest").isNull() for dk in dest_key_cols])
+                    df_keys = df_diferencas_calc.filter(only_src_mask)
+                else:
+                    # Outros subtipos: manter comportamento anterior (todas as diferenças)
+                    df_keys = df_diferencas_calc
+
+                select_cols_keys = [f"{k}_src" for k in keys]
+                rows = df_keys.select(*select_cols_keys).collect()
+                key_fields_list = [build_predicate(r) for r in rows]
+            else:
+                key_fields_list = []
         else:
             key_fields_list = []
             
