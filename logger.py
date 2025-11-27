@@ -1,4 +1,5 @@
-# Databricks notebook source
+from pyspark.sql import Row
+import datetime
 def insert_results(result):
     try:
         if not result:
@@ -9,52 +10,60 @@ def insert_results(result):
         query = result["QUERY"].replace("'", "''")
         results = result["RESULT"]
         src_partition_filter_field = result["SRC_PARTITION_FILTER_FIELD"]
-        result_id = spark.sql("SELECT COALESCE(MAX(RESULT_ID), 0) + 1 FROM framework_testes.test_out_results").collect()[0][0]
+        result_id = spark.sql("SELECT COALESCE(MAX(RESULT_ID), 0) + 1 FROM workbench_reportinghub.test_out_results").collect()[0][0]
         subtype_id = result["SUBTYPE_ID"]
 
         if result['RESULT'] !='OK':
-            details_id = spark.sql("SELECT COALESCE(MAX(DETAILS_ID), 0) + 1 FROM framework_testes.test_out_results_details").collect()[0][0]
+            details_id = spark.sql("SELECT COALESCE(MAX(DETAILS_ID), 0) + 1 FROM workbench_reportinghub.test_out_results_details").collect()[0][0]
         else:
             details_id = None
 
         details_id = f"{details_id}" if details_id is not None else "NULL"
         
-        #INSERT test_out_results
-        spark.sql(
-            f"""
-                INSERT INTO framework_testes.test_out_results
-                (RESULT_ID, TEST_ID, QUERY, RESULT, PARTITION_FILTER_VALUE, TIMESTAMP)
-                VALUES (
-                    {result_id},
-                    {test_id},
-                    "{query}",
-                    "{results}",
-                    "{src_partition_filter_field}",
-                    current_timestamp()
-                )
-            """
-        )
+
+        #INSERT test_out_results_details
+        now = datetime.datetime.now()
+        results_row = [Row(
+            RESULT_ID=result_id,
+            TEST_ID=test_id,
+            QUERY=query,
+            RESULT=results,
+            PARTITION_FILTER_VALUE=src_partition_filter_field,
+            TIMESTAMP=now
+        )]
+
+        df_results = spark.createDataFrame(results_row).distinct()
+        df_results.write.insertInto("workbench_reportinghub.test_out_results", overwrite=False)
 
         #INSERT test_out_results_details
         if result['RESULT'] !='OK' and subtype_id !='VOL':
-            result_details = result["RESULT_DETAILS"]
-
-            for teste in result_details:
-
-                spark.sql(
-                    f"""
-                        INSERT INTO framework_testes.test_out_results_details
-                        (DETAILS_ID, RESULT_ID, KEY_FIELDS, TIMESTAMP)
-                        VALUES (
-                            {details_id},
-                            {result_id},
-                            "{teste}",
-                            current_timestamp()
-                        )
-                    """
-                )
+            key_fields = result["KEY_FIELDS_LIST"]
+            if key_fields != []:
+                # Cria uma lista de Rows para o DataFrame, serializando KEY_FIELDS se necessário
+                now = datetime.datetime.now()
+                details_rows = [Row(
+                    DETAILS_ID=int(details_id)+i,
+                    RESULT_ID=result_id,
+                    KEY_FIELDS=key,
+                    TIMESTAMP=now
+                ) for i, key in enumerate(key_fields)]
+                df_details = spark.createDataFrame(details_rows)
+                df_details = df_details.dropDuplicates(["KEY_FIELDS"])
+                df_details = df_details.repartition(32)
+                df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
+                details_id = int(details_id) + len(key_fields)
+            else:
+                details_row = [Row(
+                    DETAILS_ID=int(details_id),
+                    RESULT_ID=result_id,
+                    KEY_FIELDS="",
+                    TIMESTAMP=now
+                )]
+                df_details = spark.createDataFrame(details_row)
+                df_details = df_details.dropDuplicates(["KEY_FIELDS"])
+                df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
                 details_id = int(details_id)  + 1
 
     except Exception as e:
         print(f"[!] Caught exception in insert_results: {e}")
-    return 
+    return

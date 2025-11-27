@@ -47,7 +47,7 @@ def parse_config_table(test_config_set_list):
                 test_config_params.SOURCE_PARTITION_FILTER_FIELD AS SOURCE_PARTITION_FILTER_FIELD,
                 test_config_params.DEST_PARTITION_FILTER_FIELD AS DEST_PARTITION_FILTER_FIELD,
                 test_config_params.key_fields AS KEY_FIELDS
-            FROM framework_testes.test_config_parameters test_config_params
+            FROM workbench_reportinghub.test_config_parameters test_config_params
             WHERE {test_config_set_filter}
             ORDER BY
                 TEST_ID
@@ -83,7 +83,14 @@ def parse_conditions(test_config_params_list):
         dest_filter = test_config_params['DEST_FILTER']
 
         src_groupby = test_config_params['SOURCE_GROUPBY']
+
+        if not src_groupby:
+            src_groupby = '1 = 1'
+
         dest_groupby = test_config_params['DEST_GROUPBY']
+
+        if not dest_groupby:
+            dest_groupby = '1 = 1'
 
         if not src_filter:
             src_filter = '1 = 1'
@@ -101,6 +108,9 @@ def parse_conditions(test_config_params_list):
 
 
         dest_partition_filter_field = test_config_params['DEST_PARTITION_FILTER_FIELD']
+
+        if not dest_partition_filter_field:
+            dest_partition_filter_field = ''
 
         key_fields = test_config_params['KEY_FIELDS']
 
@@ -130,7 +140,7 @@ def parse_config_set ():
         f"""
             SELECT
                 test_rel_set_parameter.TEST_ID AS TEST_ID
-            FROM framework_testes.test_rel_set_parameter test_rel_set_parameter
+            FROM workbench_reportinghub.test_rel_set_parameter test_rel_set_parameter
             ORDER BY
                 TEST_ID
         """
@@ -173,7 +183,8 @@ def run_framework(set_list=[]):
                     dest_table,
                     src_filter,
                     dest_filter,
-                    src_partition_filter_field
+                    src_partition_filter_field,
+                    dest_partition_filter_field
                 )
                 print(f"[!] Finished data volume workload... - {result['RESULT']}")
             elif subtype_id == 'CON':
@@ -192,6 +203,7 @@ def run_framework(set_list=[]):
                     src_groupby,
                     dest_groupby,
                     src_partition_filter_field,
+                    dest_partition_filter_field,
                     key_fields
                 )
                 print(f"[!] Finished data mapping workload... - {result['RESULT']}")
@@ -235,6 +247,7 @@ def run_framework(set_list=[]):
                     src_groupby,
                     dest_groupby,
                     src_partition_filter_field,
+                    dest_partition_filter_field,
                     key_fields
                 )
                 print(f"[!] Finished referential integrity workload... - {result['RESULT']}")

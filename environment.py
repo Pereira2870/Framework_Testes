@@ -1,93 +1,93 @@
-# Databricks notebook source
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_out_results;
-# MAGIC
-# MAGIC %sql
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_out_results (
-# MAGIC   --RESULT_ID BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-# MAGIC   RESULT_ID INT,
-# MAGIC   TEST_ID INT,
-# MAGIC   QUERY STRING,
-# MAGIC   RESULT STRING,
-# MAGIC   PARTITION_FILTER_VALUE STRING,
-# MAGIC   TIMESTAMP TIMESTAMP
-# MAGIC );
-# MAGIC
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_out_results_details;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_out_results_details (
-# MAGIC   --DETAILS_ID BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-# MAGIC   DETAILS_ID INT,
-# MAGIC   RESULT_ID INT,
-# MAGIC   KEY_FIELDS STRING,
-# MAGIC   TIMESTAMP TIMESTAMP
-# MAGIC );
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_config_parameters;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_config_parameters (
-# MAGIC   TEST_ID INT,
-# MAGIC   TYPE_ID INT,
-# MAGIC   SUBTYPE_ID INT,
-# MAGIC   SOURCE_TABLE STRING,
-# MAGIC   DEST_TABLE STRING,
-# MAGIC   JOIN_KEY STRING,
-# MAGIC   SOURCE_SELECT_FIELD STRING,
-# MAGIC   DEST_SELECT_FIELD STRING,
-# MAGIC   SOURCE_FILTER STRING,
-# MAGIC   DEST_FILTER STRING,
-# MAGIC   SOURCE_GROUPBY STRING,
-# MAGIC   DEST_GROUPBY STRING,
-# MAGIC   SOURCE_FLAG_PARTITION_FILTER BOOLEAN,
-# MAGIC   DEST_FLAG_PARTITION_FILTER BOOLEAN,
-# MAGIC   SOURCE_PARTITION_FILTER_FIELD STRING,
-# MAGIC   DEST_PARTITION_FILTER_FIELD STRING,
-# MAGIC   KEY_FIELDS STRING
-# MAGIC );
-# MAGIC
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_rel_set_parameter;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_rel_set_parameter (
-# MAGIC   SET_ID INT,
-# MAGIC   TEST_ID INT
-# MAGIC );
-# MAGIC
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_config_set;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_config_set (
-# MAGIC   SET_ID INT,
-# MAGIC   NAME STRING,
-# MAGIC   DESCRIPTION STRING
-# MAGIC );
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_config_subtype;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_config_subtype (
-# MAGIC   SUBTYPE_ID INT,
-# MAGIC   NAME STRING,
-# MAGIC   DESCRIPTION STRING
-# MAGIC );
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_config_type;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_config_type (
-# MAGIC   TYPE_ID INT,
-# MAGIC   NAME STRING,
-# MAGIC   DESCRIPTION STRING
-# MAGIC );
-# MAGIC
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_rel_type_subtype;
-# MAGIC
-# MAGIC CREATE TABLE IF NOT EXISTS framework_testes.test_rel_type_subtype (
-# MAGIC   TYPE_ID INT,
-# MAGIC   SUBTYPE_ID INT,
-# MAGIC   NAME STRING,
-# MAGIC   DESCRIPTION STRING
-# MAGIC );
-# MAGIC
-# MAGIC
-# MAGIC
-# MAGIC DROP TABLE IF EXISTS framework_testes.tests;
-# MAGIC DROP TABLE IF EXISTS framework_testes.test_rel_set_parameter;
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_out_results;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_out_results (
+  --RESULT_ID BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+  RESULT_ID INT,
+  TEST_ID INT,
+  QUERY STRING,
+  RESULT STRING,
+  PARTITION_FILTER_VALUE STRING,
+  TIMESTAMP TIMESTAMP
+);
+
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_out_results_details;
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_out_results_details (
+  --DETAILS_ID BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+  DETAILS_ID INT,
+  RESULT_ID INT,
+  KEY_FIELDS STRING,
+  TIMESTAMP TIMESTAMP
+);
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_config_parameters;
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_config_parameters (
+  TEST_ID INT,
+  TYPE_ID INT,
+  SUBTYPE_ID INT,
+  SOURCE_TABLE STRING,
+  DEST_TABLE STRING,
+  JOIN_KEY STRING,
+  SOURCE_SELECT_FIELD STRING,
+  DEST_SELECT_FIELD STRING,
+  SOURCE_FILTER STRING,
+  DEST_FILTER STRING,
+  SOURCE_GROUPBY STRING,
+  DEST_GROUPBY STRING,
+  SOURCE_FLAG_PARTITION_FILTER BOOLEAN,
+  DEST_FLAG_PARTITION_FILTER BOOLEAN,
+  SOURCE_PARTITION_FILTER_FIELD STRING,
+  DEST_PARTITION_FILTER_FIELD STRING,
+  KEY_FIELDS STRING
+);
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_rel_set_parameter;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_rel_set_parameter (
+  SET_ID INT,
+  TEST_ID INT
+);
+
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_config_set;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_config_set (
+  SET_ID INT,
+  NAME STRING,
+  DESCRIPTION STRING
+);
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_config_subtype;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_config_subtype (
+  SUBTYPE_ID INT,
+  NAME STRING,
+  DESCRIPTION STRING
+);
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_config_type;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_config_type (
+  TYPE_ID INT,
+  NAME STRING,
+  DESCRIPTION STRING
+);
+
+%sql
+DROP TABLE IF EXISTS workbench_reportinghub.test_rel_type_subtype;
+
+%sql
+CREATE TABLE IF NOT EXISTS workbench_reportinghub.test_rel_type_subtype (
+  TYPE_ID INT,
+  SUBTYPE_ID INT,
+  NAME STRING,
+  DESCRIPTION STRING
+);
