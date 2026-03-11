@@ -1,3 +1,5 @@
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
 from pyspark.sql import Row
 import datetime
 def insert_results(result):
@@ -9,12 +11,12 @@ def insert_results(result):
         test_id = result["TEST_ID"]
         query = result["QUERY"].replace("'", "''")
         results = result["RESULT"]
-        result_id = spark.sql("SELECT COALESCE(MAX(RESULT_ID), 0) + 1 FROM workbench_reportinghub.test_out_results").collect()[0][0]
+        result_id = spark.sql("SELECT COALESCE(MAX(RESULT_ID), 0) + 1 FROM framework_testes.test_out_results").collect()[0][0]
         subtype_id = result["SUBTYPE_ID"]
         EXECUTION_PARAMETER = result["EXECUTION_PARAMETER"]
 
         if result['RESULT'] !='OK':
-            details_id = spark.sql("SELECT COALESCE(MAX(DETAILS_ID), 0) + 1 FROM workbench_reportinghub.test_out_results_details").collect()[0][0]
+            details_id = spark.sql("SELECT COALESCE(MAX(DETAILS_ID), 0) + 1 FROM framework_testes.test_out_results_details").collect()[0][0]
         else:
             details_id = None
 
@@ -33,7 +35,7 @@ def insert_results(result):
         )]
 
         df_results = spark.createDataFrame(results_row).distinct()
-        df_results.write.insertInto("workbench_reportinghub.test_out_results", overwrite=False)
+        df_results.write.insertInto("framework_testes.test_out_results", overwrite=False)
 
         #INSERT test_out_results_details
         if result['RESULT'] !='OK' and subtype_id !='VOL':
@@ -53,7 +55,7 @@ def insert_results(result):
                 if details_rows:
                     df_details = spark.createDataFrame(details_rows)
                     # Já não é necessário dropDuplicates, IDs atribuídos após dedup
-                    df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
+                    df_details.write.insertInto("framework_testes.test_out_results_details", overwrite=False)
                     details_id = start_id + len(unique_keys)
             else:
                 details_row = [Row(
@@ -63,7 +65,7 @@ def insert_results(result):
                     TIMESTAMP=now
                 )]
                 df_details = spark.createDataFrame(details_row)
-                df_details.write.insertInto("workbench_reportinghub.test_out_results_details", overwrite=False)
+                df_details.write.insertInto("framework_testes.test_out_results_details", overwrite=False)
                 details_id = int(details_id)  + 1
 
     except Exception as e:

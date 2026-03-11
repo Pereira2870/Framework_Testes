@@ -1,17 +1,18 @@
-TEST_ID;TYPE_ID;SUBTYPE_ID;SOURCE_TABLE;DEST_TABLE;JOIN_KEY;SOURCE_SELECT_FIELD;DEST_SELECT_FIELD;SOURCE_FILTER;DEST_FILTER;SOURCE_GROUPBY;DEST_GROUPBY;SOURCE_FLAG_PARTITION_FILTER;DEST_FLAG_PARTITION_FILTER;SOURCE_PARTITION_FILTER_FIELD;DEST_PARTITION_FILTER_FIELD;KEY_FIELDS
-1;VOL;VOL;joaopereira.premier_league_data_2022;(select * from iliyan.premier_league_data_2022);;;;;;;;;;;;clube
-2;VOL;VOL;joaopereira.premier_league_data_2022;iliyan.premier_league_data_2022;;;;clube = 'Manchester United';clube = 'Sporting';;;;;;;clube
-3;MAP;CON;joaopereira.premier_league_data_2022;iliyan.premier_league_data_2022;;vitorias;SUM(vitorias);clube = 'Tottenham';clube IN ('Aston Villa', 'Southampton');;;;;;;vitorias
-4;MAP;CON;joaopereira.premier_league_data_2022;iliyan.premier_league_stats_2022;src.classificacao = dest.classificacao;classificacao, vitorias;classificacao, vitorias;;;;;;;;;classificacao
-5;MAP;CON;joaopereira.premier_league_data_2022;iliyan.premier_league_data_2022;src.classificacao = dest.classificacao;;;;;;;;;;;clube
-6;MAP;CON;joaopereira.premier_league_data_2022;iliyan.premier_league_data_2022;;vitorias;SUM(vitorias);clube = 'Tottenham';clube = 'Sporting';;;;;;;clube
-7;MAP;CAT;joaopereira.premier_league_data_2022;;;;;clube NOT IN ('Manchester United');;;;;;;;clube
-8;MAP;FORM;joaopereira.premier_league_data_2022;;;;;clube LIKE ('% United');;;;;;;;clube
-9;CHTEC;REF;joaopereira.premier_league_data_2022;iliyan.premier_league_data_2022;src.classificacao = dest.classificacao;classificacao;classificacao;;;;;;;;;clube
-10;CHTEC;REF;joaopereira.premier_league_data_2022_v2;iliyan.premier_league_data_2022;src.classificacao = dest.classificacao;classificacao;classificacao;;;;;;;;;classificacao
-11;CHTEC;REF;joaopereira.premier_league_data_2022;joaopereira.premier_league_data_2022_v3;src.clube = dest.clube;clube;clube;;;;;;;;;clube
-12;MAP;OBG;joaopereira.premier_league_data_2022;;;;;clube IS NULL OR vitorias IS NULL;;;;;;;;clube
-13;MAP;OBG;joaopereira.premier_league_data_2022_v2;;;;;clube IS NULL OR vitorias IS NULL;;;;;;;;clube
-14;MAP;OBG;joaopereira.premier_league_data_2022_v2;;;;;vitorias IS NULL;;;;;;;;clube
-15;CHTEC;DUP;joaopereira.premier_league_data_2022;;;clube;;;;clube;;;;;;clube
-16;CHTEC;DUP;joaopereira.premier_league_data_2022_v2;;;clube;;;;clube;;;;;;clube
+TEST_ID;TYPE_ID;SUBTYPE_ID;SOURCE_TABLE;DEST_TABLE;JOIN_KEY;SOURCE_SELECT_FIELD;DEST_SELECT_FIELD;SOURCE_FILTER;DEST_FILTER;SOURCE_GROUPBY;DEST_GROUPBY;KEY_FIELDS
+1;VOL;VOL;joaopereira.premier_league_data_2022;(select * from matildeantao.premier_league_data_2022);;;;;;;;
+2;VOL;VOL;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;;;;clube = 'Manchester United';clube = 'Sporting';;;
+3;MAP;CON;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;;vitorias;SUM(vitorias);clube = 'Tottenham';clube IN ('Aston Villa', 'Southampton');;;vitorias
+4;MAP;CON;joaopereira.premier_league_data_2022;matildeantao.premier_league_stats_2022;classificacao = classificacao;classificacao, vitorias;classificacao, vitorias;;;;;classificacao
+5;MAP;CON;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;classificacao = classificacao;clube,classificacao;clube,classificacao;;;;;clube
+6;MAP;CON;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;;vitorias,clube;SUM(vitorias),clube;clube = 'Tottenham';clube = 'Sporting';;clube;clube
+7;MAP;CAT;joaopereira.premier_league_data_2022;;;;;clube NOT IN ('Manchester United');;;;clube
+8;MAP;FORM;joaopereira.premier_league_data_2022;;;;;clube LIKE ('% United');;;;clube
+9;CHTEC;REF;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;classificacao = classificacao;classificacao,clube;classificacao,clube;;;;;clube
+10;CHTEC;REF;joaopereira.premier_league_data_2022_v2;matildeantao.premier_league_data_2022;classificacao = classificacao;classificacao;classificacao;;;;;classificacao
+11;CHTEC;REF;joaopereira.premier_league_data_2022;joaopereira.premier_league_data_2022_v3;clube = clube;clube;clube;;;;;clube
+12;MAP;OBG;joaopereira.premier_league_data_2022;;;;;clube IS NULL OR vitorias IS NULL;;;;clube
+13;MAP;OBG;joaopereira.premier_league_data_2022_v2;;;;;clube IS NULL OR vitorias IS NULL;;;;clube
+14;MAP;OBG;joaopereira.premier_league_data_2022_v2;;;;;vitorias IS NULL;;;;clube
+15;CHTEC;DUP;joaopereira.premier_league_data_2022;;;clube;;;;clube;;clube
+16;CHTEC;DUP;joaopereira.premier_league_data_2022_v2;;;clube;;;;clube;;clube
+17;VOL;VOL;joaopereira.premier_league_data_2022;matildeantao.premier_league_data_2022;;;;clube=?;clube=?;;;

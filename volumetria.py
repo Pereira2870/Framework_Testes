@@ -1,3 +1,6 @@
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+
 def test_data_volume(
     test_id,
     subtype_id,

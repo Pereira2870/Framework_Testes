@@ -1,3 +1,5 @@
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
 def test_data_catalog(
     test_id,
     subtype_id,

@@ -1,3 +1,6 @@
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+
 def test_duplicates(
     test_id,
     subtype_id,

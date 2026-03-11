@@ -1,25 +1,18 @@
-# Databricks notebook source
-# MAGIC %run /Workspace/framework-testes/duplicados
+import sys
+import importlib
+sys.path.insert(0, "/Workspace/framework-testes-v2")
+importlib.invalidate_caches()
+for _mod in ['logger', 'catalogo_valores', 'duplicados', 'mapeamentos', 'volumetria']:
+    if _mod in sys.modules:
+        del sys.modules[_mod]
+import logger as logger
+import catalogo_valores as catalogo_valores
+import duplicados as duplicados
+import mapeamentos as mapeamentos
+import volumetria as volumetria
 
-# COMMAND ----------
-
-# MAGIC %run /Workspace/framework-testes/catalogo-valores
-
-# COMMAND ----------
-
-# MAGIC %run /Workspace/framework-testes/mapeamentos
-
-# COMMAND ----------
-
-# MAGIC %run /Workspace/framework-testes/volumetria
-
-# COMMAND ----------
-
-# MAGIC %run /Workspace/framework-testes/logger
-
-# COMMAND ----------
-
-# COMMAND ----------
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
 
 def parse_config_table(test_config_set_list):
    
@@ -45,7 +38,7 @@ def parse_config_table(test_config_set_list):
                 test_config_params.SOURCE_GROUPBY AS SOURCE_GROUPBY,
                 test_config_params.DEST_GROUPBY AS DEST_GROUPBY,
                 test_config_params.key_fields AS KEY_FIELDS
-            FROM workbench_reportinghub.test_config_parameters test_config_params
+            FROM framework_testes.test_config_parameters test_config_params
             WHERE {test_config_set_filter}
             ORDER BY
                 TEST_ID
@@ -120,7 +113,7 @@ def parse_config_set ():
         f"""
             SELECT
                 test_rel_set_parameter.TEST_ID AS TEST_ID
-            FROM workbench_reportinghub.test_rel_set_parameter test_rel_set_parameter
+            FROM framework_testes.test_rel_set_parameter test_rel_set_parameter
             ORDER BY
                 TEST_ID
         """
@@ -162,7 +155,7 @@ def run_framework(set_list=[]):
             if subtype_id == 'VOL':
                 print("[!] Calling data volume workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_volume(
+                result = volumetria.test_data_volume(
                     test_id,
                     subtype_id,
                     src_table,
@@ -173,13 +166,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished data volume workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'CON':
                 print("[!] Calling data mapping workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_mapping(
+                result = mapeamentos.test_data_mapping(
                     test_id,
                     subtype_id,
                     src_table,
@@ -196,13 +189,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished data mapping workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'CAT':
                 print("[!] Calling data catalog workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_catalog(
+                result = catalogo_valores.test_data_catalog(
                     test_id,
                     subtype_id,
                     src_table,
@@ -212,13 +205,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished data catalog workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'FORM':
                 print("[!] Calling data format workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_catalog(
+                result = catalogo_valores.test_data_catalog(
                     test_id,
                     subtype_id,
                     src_table,
@@ -228,13 +221,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished data format workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'REF':
                 print("[!] Calling referential integrity workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_mapping(
+                result = mapeamentos.test_data_mapping(
                     test_id,
                     subtype_id,
                     src_table,
@@ -251,13 +244,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished referential integrity workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'OBG':
                 print("[!] Calling mandatory fill workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_data_catalog(
+                result = catalogo_valores.test_data_catalog(
                     test_id,
                     subtype_id,
                     src_table,
@@ -267,13 +260,13 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished mandatory fill workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             elif subtype_id == 'DUP':
                 print("[!] Calling duplicates workload...")
                 print(f"[!] TEST ID - {test_id}")
-                result = test_duplicates(
+                result = duplicados.test_duplicates(
                     test_id,
                     subtype_id,
                     src_table,
@@ -285,7 +278,7 @@ def run_framework(set_list=[]):
                 )
                 if result:
                     print(f"[!] Finished duplicates workload... - {result['RESULT']}")
-                    insert_results(result)
+                    logger.insert_results(result)
                 else:
                     continue
             else:
