@@ -19,6 +19,8 @@
 
 # COMMAND ----------
 
+# COMMAND ----------
+
 def parse_config_table(test_config_set_list):
    
     if not test_config_set_list: #Se a lista de set's estiver vazia, não é aplicado nenhum filtro.
@@ -42,10 +44,6 @@ def parse_config_table(test_config_set_list):
                 test_config_params.DEST_FILTER AS DEST_FILTER,
                 test_config_params.SOURCE_GROUPBY AS SOURCE_GROUPBY,
                 test_config_params.DEST_GROUPBY AS DEST_GROUPBY,
-                test_config_params.SOURCE_FLAG_PARTITION_FILTER AS SOURCE_FLAG_PARTITION_FILTER,
-                test_config_params.DEST_FLAG_PARTITION_FILTER AS DEST_FLAG_PARTITION_FILTER,
-                test_config_params.SOURCE_PARTITION_FILTER_FIELD AS SOURCE_PARTITION_FILTER_FIELD,
-                test_config_params.DEST_PARTITION_FILTER_FIELD AS DEST_PARTITION_FILTER_FIELD,
                 test_config_params.key_fields AS KEY_FIELDS
             FROM workbench_reportinghub.test_config_parameters test_config_params
             WHERE {test_config_set_filter}
@@ -98,20 +96,6 @@ def parse_conditions(test_config_params_list):
         if not dest_filter:
             dest_filter = '1 = 1'
 
-        src_flag_partition_filter = test_config_params['SOURCE_FLAG_PARTITION_FILTER']
-        dest_flag_partition_filter = test_config_params['DEST_FLAG_PARTITION_FILTER']
-
-        src_partition_filter_field = test_config_params['SOURCE_PARTITION_FILTER_FIELD']
-
-        if not src_partition_filter_field:
-            src_partition_filter_field = ''
-
-
-        dest_partition_filter_field = test_config_params['DEST_PARTITION_FILTER_FIELD']
-
-        if not dest_partition_filter_field:
-            dest_partition_filter_field = ''
-
         key_fields = test_config_params['KEY_FIELDS']
 
         params_list.append({
@@ -126,10 +110,6 @@ def parse_conditions(test_config_params_list):
             'DEST_FILTER': dest_filter,
             'SRC_GROUPBY': src_groupby,
             'DEST_GROUPBY': dest_groupby,
-            'SOURCE_FLAG_PARTITION_FILTER': src_flag_partition_filter,
-            'DEST_FLAG_PARTITION_FILTER': dest_flag_partition_filter,
-            'SOURCE_PARTITION_FILTER_FIELD': src_partition_filter_field,
-            'DEST_PARTITION_FILTER_FIELD': dest_partition_filter_field,
             'KEY_FIELDS': key_fields
         })
                     
@@ -147,7 +127,17 @@ def parse_config_set ():
     ).collect()
 
 def run_framework(set_list=[]):
+    # Suprime logs verbosos do Spark e Databricks
+    import logging
+    logging.getLogger("py4j").setLevel(logging.CRITICAL)
+    logging.getLogger("pyspark").setLevel(logging.CRITICAL)
+    logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
+    logging.getLogger("").setLevel(logging.WARNING)
+    
     try:
+        execution_parameter_input = input("Quais são as partições que pretende que o motor execute? ")
+        print(f"[!] Resposta recebida: {execution_parameter_input}")
+
         test_config_set_list = parse_config_set()
         test_config_params_list = parse_config_table(test_config_set_list)
         tests = parse_conditions(test_config_params_list)
@@ -167,10 +157,6 @@ def run_framework(set_list=[]):
             dest_filter = test['DEST_FILTER']
             src_groupby = test['SRC_GROUPBY']
             dest_groupby = test['DEST_GROUPBY']
-            src_flag_partition_filter = test['SOURCE_FLAG_PARTITION_FILTER']
-            dst_flag_partition_filter = test['DEST_FLAG_PARTITION_FILTER']
-            src_partition_filter_field = test['SOURCE_PARTITION_FILTER_FIELD']
-            dest_partition_filter_field = test['DEST_PARTITION_FILTER_FIELD']
             key_fields = test['KEY_FIELDS']
 
             if subtype_id == 'VOL':
@@ -183,10 +169,13 @@ def run_framework(set_list=[]):
                     dest_table,
                     src_filter,
                     dest_filter,
-                    src_partition_filter_field,
-                    dest_partition_filter_field
+                    execution_parameter_input
                 )
-                print(f"[!] Finished data volume workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished data volume workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'CON':
                 print("[!] Calling data mapping workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -202,11 +191,14 @@ def run_framework(set_list=[]):
                     dest_filter,
                     src_groupby,
                     dest_groupby,
-                    src_partition_filter_field,
-                    dest_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished data mapping workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished data mapping workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'CAT':
                 print("[!] Calling data catalog workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -215,10 +207,14 @@ def run_framework(set_list=[]):
                     subtype_id,
                     src_table,
                     src_filter,
-                    src_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished data catalog workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished data catalog workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'FORM':
                 print("[!] Calling data format workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -227,10 +223,14 @@ def run_framework(set_list=[]):
                     subtype_id,
                     src_table,
                     src_filter,
-                    src_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished data format workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished data format workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'REF':
                 print("[!] Calling referential integrity workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -246,11 +246,14 @@ def run_framework(set_list=[]):
                     dest_filter,
                     src_groupby,
                     dest_groupby,
-                    src_partition_filter_field,
-                    dest_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished referential integrity workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished referential integrity workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'OBG':
                 print("[!] Calling mandatory fill workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -259,10 +262,14 @@ def run_framework(set_list=[]):
                     subtype_id,
                     src_table,
                     src_filter,
-                    src_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished mandatory fill workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished mandatory fill workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             elif subtype_id == 'DUP':
                 print("[!] Calling duplicates workload...")
                 print(f"[!] TEST ID - {test_id}")
@@ -273,16 +280,17 @@ def run_framework(set_list=[]):
                     src_filter,
                     src_groupby,
                     src_select_field,
-                    src_partition_filter_field,
-                    key_fields
+                    key_fields,
+                    execution_parameter_input
                 )
-                print(f"[!] Finished duplicates workload... - {result['RESULT']}")
+                if result:
+                    print(f"[!] Finished duplicates workload... - {result['RESULT']}")
+                    insert_results(result)
+                else:
+                    continue
             else:
                 raise Exception("Caught unknown test type!")
-            
-            insert_results(result)
         print(f"[!] Framwork run with success.")
     except Exception as e:
         print(f"[!] Caught exception in run_framework: {e}")
-
 run_framework()

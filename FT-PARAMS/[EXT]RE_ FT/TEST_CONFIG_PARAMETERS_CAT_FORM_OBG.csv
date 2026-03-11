@@ -1,0 +1,7 @@
+TEST_ID;TYPE_ID;SUBTYPE_ID;SOURCE_TABLE;DEST_TABLE;JOIN_KEY;SOURCE_SELECT_FIELD;DEST_SELECT_FIELD;SOURCE_FILTER;DEST_FILTER;SOURCE_GROUPBY;DEST_GROUPBY;KEY_FIELDS
+1;MAP;CAT;business_universoperimetros.ct001_univ_saldo;;;cempresa,cbalcao,cnumecta,zdeposit;;caplic IN ('FA','FB') and ref_date=?;;;;cempresa,cbalcao,cnumecta,zdeposit
+2;MAP;CAT;business_universoperimetros.ct001_univ_saldo;;;;;caplic IN ('FA','FB') and ref_date=?;;;;cempresa,cbalcao,cnumecta,zdeposit
+3;MAP;FORM;business_universoperimetros.ct001_univ_saldo;;;cempresa,cbalcao,cnumecta,zdeposit;;descritivo LIKE ('%LDA') and ref_date=?;;;;cempresa,cbalcao,cnumecta,zdeposit
+4;MAP;FORM;business_universoperimetros.ct001_univ_saldo;;;;;descritivo LIKE ('%LDA') and ref_date=?;;;;cempresa,cbalcao,cnumecta,zdeposit
+5;MAP;CAT;business_universoperimetros.ct001_univ_saldo;;;cempresa,cbalcao,cnumecta,zdeposit;;caplic IN ('FA','FB') and ref_date='2025-09-30';;;;cempresa,cbalcao,cnumecta,zdeposit
+6;MAP;OBG;business_universoperimetros.ct001_univ_saldo;;;;;caplic ='' and ref_date=? and flag_ativo=?;;;;cempresa,cbalcao,cnumecta,zdeposit

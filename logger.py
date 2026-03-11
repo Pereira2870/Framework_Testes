@@ -9,9 +9,9 @@ def insert_results(result):
         test_id = result["TEST_ID"]
         query = result["QUERY"].replace("'", "''")
         results = result["RESULT"]
-        src_partition_filter_field = result["SRC_PARTITION_FILTER_FIELD"]
         result_id = spark.sql("SELECT COALESCE(MAX(RESULT_ID), 0) + 1 FROM workbench_reportinghub.test_out_results").collect()[0][0]
         subtype_id = result["SUBTYPE_ID"]
+        EXECUTION_PARAMETER = result["EXECUTION_PARAMETER"]
 
         if result['RESULT'] !='OK':
             details_id = spark.sql("SELECT COALESCE(MAX(DETAILS_ID), 0) + 1 FROM workbench_reportinghub.test_out_results_details").collect()[0][0]
@@ -28,7 +28,7 @@ def insert_results(result):
             TEST_ID=test_id,
             QUERY=query,
             RESULT=results,
-            PARTITION_FILTER_VALUE=src_partition_filter_field,
+            EXECUTION_PARAMETER=EXECUTION_PARAMETER,
             TIMESTAMP=now
         )]
 

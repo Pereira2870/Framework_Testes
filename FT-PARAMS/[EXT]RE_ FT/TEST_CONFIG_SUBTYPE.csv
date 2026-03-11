@@ -1,0 +1,8 @@
+SUBTYPE_ID;NAME;DESCRIPTION
+VOL;Volume de Registos;Garante que nenhum dado essencial esta em falta
+CON;Consistencia de Dados;Compara se os dados sao consistentes em diferentes sistemas ou momentos
+CAT;Catalogo de Dados;Valida que os dados estao contidos num catalogo de valores possiveis
+FORM;Validacao de Formato;Valida o formato dos dados
+REF;Integridade Referencial;Valida que existem ligacoes validas entre tabelas
+OBG;Preenchimento Obrigatorio;Valida a existencia de mapeamento em campos com preenchimento obrigatorio
+DUP;Unicidade de Chaves;Valida a unicidade de chaves tecnicas

@@ -1,0 +1,3 @@
+TEST_ID;TYPE_ID;SUBTYPE_ID;SOURCE_TABLE;DEST_TABLE;JOIN_KEY;SOURCE_SELECT_FIELD;DEST_SELECT_FIELD;SOURCE_FILTER;DEST_FILTER;SOURCE_GROUPBY;DEST_GROUPBY;KEY_FIELDS
+1;CHTEC;DUP;business_universoperimetros.ct001_univ_saldo;;;;;ref_date=? and cod_visao=?;;;;cempresa,cbalcao,cnumecta,zdeposit
+2;CHTEC;DUP;business_universoperimetros.ct001_univ_saldo;;;;;ref_date=?;;;;cempresa,cbalcao,cnumecta,zdeposit

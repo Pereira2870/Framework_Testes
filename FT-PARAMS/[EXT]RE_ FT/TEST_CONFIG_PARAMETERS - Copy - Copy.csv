@@ -1,0 +1,26 @@
+TEST_ID;TYPE_ID;SUBTYPE_ID;SOURCE_TABLE;DEST_TABLE;JOIN_KEY;SOURCE_SELECT_FIELD;DEST_SELECT_FIELD;SOURCE_FILTER;DEST_FILTER;SOURCE_GROUPBY;DEST_GROUPBY;KEY_FIELDS
+1;VOL;VOL;workbench_reportinghub.ebawl_out_transfers_sepa_bk;"SELECT *
+FROM (
+        SELECT *
+        FROM workbench_reportinghub.ebawl_out_transfers_sepa_bk
+)  a
+INNER JOIN (
+        SELECT 'REC' as direcao, *
+        FROM curated_internal_mainframe_estrangeiro.ort01_sepa_rec
+        WHERE (TRIM(ORYD01H9_CESTADO) = 'T'
+        OR (TRIM(ORYD01H9_CESTADO) = 'A' AND (ORYD01H9_CREJ LIKE 'RR%' OR ORYD01H9_CREJ LIKE 'AC%')))
+        UNION ALL
+        SELECT 'EMI' as direcao, *
+        FROM curated_internal_mainframe_estrangeiro.ort01_sepa_emi
+        WHERE data_date_part != '2025-11-24'
+        AND (TRIM(ORYD01H9_CESTADO) = 'T'
+        OR (TRIM(ORYD01H9_CESTADO) = 'A' AND (ORYD01H9_CREJ LIKE 'RR%' OR ORYD01H9_CREJ LIKE 'AC%')))
+        UNION ALL
+        SELECT 'INT' as direcao, *
+        FROM curated_internal_mainframe_estrangeiro.ort01_sepa_int
+        WHERE (TRIM(ORYD01H9_CESTADO) = 'T'
+        OR (TRIM(ORYD01H9_CESTADO) = 'A' AND (ORYD01H9_CREJ LIKE 'RR%' OR ORYD01H9_CREJ LIKE 'AC%')))
+) b
+on (
+        trim(b.ORYD01H9_CREFER) = trim(a.crefer)
+)";;sum(mmovim);SUM(ORYD01H9_MMOVIM);;where report_date = ? and substring(data_date_part,1,4) LIKE  data=?;;;
