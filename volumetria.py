@@ -67,15 +67,18 @@ def test_data_volume(
         execution_parameter_str = " | ".join(execution_parameter) if execution_parameter else "N/A"
         
         # Constrói query SQL que compara volumetria entre source e destino
-        # Retorna 'OK' se as contagens forem iguais, 'NOK' caso contrário
+        # Retorna contagens de ambas as tabelas e 'OK'/'NOK' conforme igualdade
         query = f"""
         SELECT 
+            src.SRC_COUNT,
+            dest.DEST_COUNT,
             CASE 
-                WHEN (SELECT COUNT(1) FROM {src_table} WHERE {src_where_condition}) = 
-                     (SELECT COUNT(1) FROM {dest_table} WHERE {dest_where_condition})
-                THEN 'OK'
+                WHEN src.SRC_COUNT = dest.DEST_COUNT THEN 'OK'
                 ELSE 'NOK'
             END AS RESULT
+        FROM
+            (SELECT COUNT(1) AS SRC_COUNT FROM {src_table} WHERE {src_where_condition}) src,
+            (SELECT COUNT(1) AS DEST_COUNT FROM {dest_table} WHERE {dest_where_condition}) dest
         """
 
         # Executa a query no Spark e obtém o resultado
