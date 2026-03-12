@@ -219,10 +219,10 @@ def test_data_mapping(
             SELECT {select_clause},
                 CASE
                     WHEN {' AND '.join(dest_null_checks)}
-                    THEN 'NO MATCH @ ONLY TABELA A'
+                    THEN "NO MATCH @ ONLY TABELA A"
                     WHEN {' AND '.join(src_null_checks)}
-                    THEN 'NO MATCH @ ONLY TABELA B'
-                    ELSE 'MATCH'
+                    THEN "NO MATCH @ ONLY TABELA B"
+                    ELSE "MATCH"
                 END as status
             FROM ({query_src}) src
             FULL OUTER JOIN ({query_dest}) dest
@@ -235,12 +235,12 @@ def test_data_mapping(
             SELECT {select_clause},
                 CASE
                     WHEN {comparison_clause}
-                    THEN 'NO MATCH'
+                    THEN "NO MATCH"
                     WHEN {' AND '.join(dest_null_checks)}
-                    THEN 'NO MATCH @ ONLY TABELA A'
+                    THEN "NO MATCH @ ONLY TABELA A"
                     WHEN {' AND '.join(src_null_checks)}
-                    THEN 'NO MATCH @ ONLY TABELA B'
-                    ELSE 'MATCH'
+                    THEN "NO MATCH @ ONLY TABELA B"
+                    ELSE "MATCH"
                 END as status
             FROM ({query_src}) src
             FULL OUTER JOIN ({query_dest}) dest
@@ -282,8 +282,8 @@ def test_data_mapping(
             SELECT {select_clause},
                 CASE
                     WHEN {comparison_clause}
-                    THEN 'NO MATCH'
-                    ELSE 'MATCH'
+                    THEN "NO MATCH"
+                    ELSE "MATCH"
                 END as status
             FROM ({query_src}) src
             CROSS JOIN ({query_dest}) dest
