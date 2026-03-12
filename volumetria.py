@@ -73,8 +73,8 @@ def test_data_volume(
             src.SRC_COUNT,
             dest.DEST_COUNT,
             CASE 
-                WHEN src.SRC_COUNT = dest.DEST_COUNT THEN 'OK'
-                ELSE 'NOK'
+                WHEN src.SRC_COUNT = dest.DEST_COUNT THEN "OK"
+                ELSE "NOK"
             END AS RESULT
         FROM
             (SELECT COUNT(1) AS SRC_COUNT FROM {src_table} WHERE {src_where_condition}) src,
