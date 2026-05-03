@@ -1,0 +1,4 @@
+TYPE_ID;NAME;DESCRIPTION
+VOL;Volumetria;Garantir que os dados migrados, processados ou integrados estejam corretos, completos e dentro dos limites de volumetria esperados, assegurando a performance e integridade do sistema.
+MAP;Mapeamentos;Validar que os dados da origem estao sendo corretamente mapeados para os campos de destino, respeitando regras de negocio, transformacoes e formatos esperados.
+CHTEC;Chaves Tecnicas;Garantir a unicidade, rastreabilidade e consistencia dos registros.
