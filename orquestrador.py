@@ -1,6 +1,6 @@
 import sys
 import importlib
-sys.path.insert(0, "/Workspace/framework-testes-v2")
+sys.path.insert(0, "/Workspace/framework-testes-v2") #Apontar para a pasta onde estão os scripts
 importlib.invalidate_caches()
 for _mod in ['logger', 'catalogo_valores', 'duplicados', 'mapeamentos', 'volumetria']:
     if _mod in sys.modules:
@@ -13,6 +13,7 @@ import volumetria as volumetria
 
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
+schema = "framework_testes"
 
 def parse_config_table(test_config_set_list):
    
@@ -38,7 +39,7 @@ def parse_config_table(test_config_set_list):
                 test_config_params.SOURCE_GROUPBY AS SOURCE_GROUPBY,
                 test_config_params.DEST_GROUPBY AS DEST_GROUPBY,
                 test_config_params.key_fields AS KEY_FIELDS
-            FROM framework_testes.test_config_parameters test_config_params
+            FROM {schema}.test_config_parameters test_config_params
             WHERE {test_config_set_filter}
             ORDER BY
                 TEST_ID
@@ -113,7 +114,7 @@ def parse_config_set ():
         f"""
             SELECT
                 test_rel_set_parameter.TEST_ID AS TEST_ID
-            FROM framework_testes.test_rel_set_parameter test_rel_set_parameter
+            FROM {schema}.test_rel_set_parameter test_rel_set_parameter
             ORDER BY
                 TEST_ID
         """
